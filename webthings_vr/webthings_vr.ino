@@ -8,6 +8,10 @@
 #define LED_PIN        33
 
 
+int flag_previous_I = 0;
+int flag_previous_II = 1;
+
+
 /*
    SSID and Password
 */
@@ -68,14 +72,14 @@ void setup()
   pinMode(BUILT_IN_LED, OUTPUT);
   digitalWrite(BUILT_IN_LED, HIGH);
 
-  
+
 
   //user defined pins
   pinMode(PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
 
-  //Setting up serial 
+  //Setting up serial
   Serial.begin(115200);
 
   Serial.print("Connecting to");
@@ -136,35 +140,86 @@ void setup()
   Serial.print("/things/");
   Serial.println(led.id);
 
+
 }
+
 
 void loop()
 {
-  adapter->update();
-  
+
+
   ThingPropertyValue tpVal;
   bool pin;
 
   // Reading the values
   pin = digitalRead(PIN);
-  Serial.println(pin);
+  //Serial.println(pin);
 
-  // Updare device values
-  tpVal.boolean = pin;
-  ledOn.setValue(tpVal);
+  if ( pin == LOW)
+  {
+    tpVal.boolean = pin;
+    if ( flag_previous_I == 0)
+    {
 
-  bool on = ledOn.getValue().boolean;
-  digitalWrite(LED_PIN, on ? LOW : HIGH); // active low led
-  if (on != lastOn) {
+      ledOn.setValue(tpVal);
+
+      bool On1 = ledOn.getValue().boolean;
+      digitalWrite(LED_PIN, On1 ? LOW : HIGH);
+
+      if (On1 != lastOn)
+      {
+        Serial.print(led.id);
+        Serial.print(": ");
+        Serial.println(On1);
+        Serial.println("condition 1");
+      }
+      lastOn = On1;
+      flag_previous_I = 1;
+      flag_previous_II = 1;
+    }
+
+  }
+
+  if ( pin == HIGH)
+  {
+    tpVal.boolean = pin;
+    if ( flag_previous_II == 1)
+    {
+
+      ledOn.setValue(tpVal);
+
+      bool On1 = ledOn.getValue().boolean;
+      digitalWrite(LED_PIN, On1 ? LOW : HIGH);
+
+      if (On1 != lastOn)
+      {
+        Serial.print(led.id);
+        Serial.print(": ");
+        Serial.println(On1);
+        Serial.println("condition 2");
+      }
+      lastOn = On1;
+      flag_previous_I = 0;
+      flag_previous_II = 0;
+    }
+
+  }
+  bool On2 = ledOn.getValue().boolean;
+  digitalWrite(LED_PIN, On2 ? LOW : HIGH);
+
+  if (On2 != lastOn)
+  {
     Serial.print(led.id);
     Serial.print(": ");
-    Serial.println(on);
-    }
-  lastOn = on;
-  Serial.println(lastOn);
+    Serial.println(On2);
+    Serial.println("condition 3");
+  }
+  lastOn = On2;
+
   // Update all the properties and events
   adapter->update();
 
+  // Wait for some time
   delay(2000);
 
 }
