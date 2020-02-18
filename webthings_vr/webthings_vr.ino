@@ -6,28 +6,33 @@
 #define BUILT_IN_LED   2
 #define PIN            34
 #define LED_PIN        33
-
+#define BUTTON         25
 
 int flag_previous_I = 0;
 int flag_previous_II = 1;
 
 
+
 /*
    SSID and Password
 */
-const char *ssid = "WesternDigital";
-const char *password = "asdfghjkl";
+const char *ssid = "VR";
+const char *password = "wpa2 psk";
+
 
 /*
    Host name used by mDNS
 */
 const String mDNSHostname = "RealTimeFeedback";
 
+
+
 /*
    Handle connection between things and gateway
 */
 
 WebThingAdapter *adapter;
+
 
 
 /*
@@ -39,6 +44,7 @@ const char *ledTypes[] = {"onoffswitch",
                           nullptr
                          };
 
+
 /*
    Description of your Thing
 
@@ -49,6 +55,8 @@ const char *ledTypes[] = {"onoffswitch",
       @types: array of @types
 */
 ThingDevice led("led", "Lamp", ledTypes);
+
+
 
 /*
    Define one or more properties supported by your Thing
@@ -67,10 +75,97 @@ ThingProperty ledOn("on", "", BOOLEAN, "OnOffProperty");
 bool lastOn = false;       // setting the value as 0
 
 
+
+
+/*
+   WiFi setup
+*/
+void WiFiSetup()
+{
+  int interval = 1000;
+  int previousMillis = 0;
+  bool blink = true;
+  Serial.println("Waiting for WiFi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+    digitalWrite(BUILT_IN_LED, blink ? LOW : HIGH);     //Blink until the WiFi get connected
+    blink = !blink;
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      break;                                            // if WiFi got connected then Break
+    }
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval)
+    {
+      previousMillis = currentMillis;
+      Call_ManualControl();                             // if not connected then call Manual Control
+    }
+
+  }
+  digitalWrite(BUILT_IN_LED, HIGH);
+  AdapterSetup();
+}
+
+
+/*
+   Adapter Setup
+*/
+void AdapterSetup()
+{
+  Serial.println("");
+  Serial.print("Connected!");
+  Serial.println(ssid);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+
+  /*
+    Create new WebThing connection handle (default port: 80)
+  */
+  adapter = new WebThingAdapter(mDNSHostname, WiFi.localIP());
+
+
+
+  /*
+     Associate properties with devices
+  */
+  led.addProperty(&ledOn);               //@params : passing address of the object
+
+
+
+
+  /*
+     Associate device with connection
+  */
+  adapter->addDevice(&led);
+
+
+
+
+  /*
+     start mDNS and HTTP server
+  */
+
+  adapter->begin();
+  Serial.println("HTTP server started");
+  Serial.print("http://");
+  Serial.print(WiFi.localIP());
+  Serial.print("/things/");
+  Serial.println(led.id);
+
+
+}
+
+
 void setup()
 {
   pinMode(BUILT_IN_LED, OUTPUT);
   digitalWrite(BUILT_IN_LED, HIGH);
+
+  pinMode(BUTTON, INPUT);
+  digitalWrite(BUTTON, HIGH);
 
 
 
@@ -92,60 +187,28 @@ void setup()
   Serial.println("");
 
 
-  /*
-     Waiting for connection
-  */
-  bool blink = true;
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-    digitalWrite(BUILT_IN_LED, blink ? LOW : HIGH);
-    blink = !blink;
-  }
-  digitalWrite(BUILT_IN_LED, HIGH);
-
-  Serial.println("");
-  Serial.print("Connected!");
-  Serial.println(ssid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-
-
-  /*
-    Create new WebThing connection handle (default port: 80)
-  */
-  adapter = new WebThingAdapter(mDNSHostname, WiFi.localIP());
-
-
-  /*
-     Associate properties with devices
-  */
-  led.addProperty(&ledOn);               //@params : passing address of the object
-
-
-  /*
-     Associate device with connection
-  */
-  adapter->addDevice(&led);
-
-  /*
-     start mDNS and HTTP server
-  */
-
-  adapter->begin();
-  Serial.println("HTTP server started");
-  Serial.print("http://");
-  Serial.print(WiFi.localIP());
-  Serial.print("/things/");
-  Serial.println(led.id);
+  //Setting up WiFi
+  WiFiSetup();
 
 
 }
 
 
+
+
+
 void loop()
 {
+
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Call_ManualControl();
+    if (digitalRead(BUTTON) == LOW)
+    {
+      Serial.println("restarting ESP");
+      ESP.restart();
+    }
+  }
 
 
   ThingPropertyValue tpVal;
@@ -215,6 +278,11 @@ void loop()
     Serial.println("condition 3");
   }
   lastOn = On2;
+  Serial.println(lastOn);
+
+
+
+
 
   // Update all the properties and events
   adapter->update();
@@ -222,4 +290,19 @@ void loop()
   // Wait for some time
   delay(2000);
 
+}
+
+
+
+/*
+    Function for manual control
+    Incase of WiFi network got disconnected(not present), this can be used to control manually
+*/
+void Call_ManualControl()
+{
+  Serial.println("Manual Control");
+  digitalWrite(LED_PIN, digitalRead(PIN));
+  Serial.println("LED");
+  Serial.println(digitalRead(PIN));
+  delay(1);
 }
