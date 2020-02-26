@@ -194,23 +194,8 @@ void setup()
 }
 
 
-
-
-
-void loop()
+void Adapter()
 {
-
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    Call_ManualControl();
-    if (digitalRead(BUTTON) == LOW)
-    {
-      Serial.println("restarting ESP");
-      ESP.restart();
-    }
-  }
-
-
   ThingPropertyValue tpVal;
   bool pin;
 
@@ -279,6 +264,24 @@ void loop()
   }
   lastOn = On2;
   Serial.println(lastOn);
+}
+
+
+void loop()
+{
+
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Call_ManualControl();
+    if (digitalRead(BUTTON) == LOW)
+    {
+      Serial.println("restarting ESP");
+      ESP.restart();
+    }
+  }
+
+  Adapter();
+  
 
 
 
