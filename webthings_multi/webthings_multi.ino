@@ -3,19 +3,23 @@
 #include <WebThingAdapter.h>
 
 
-#define BUILT_IN_LED   2
-#define PIN1           34
-#define PIN2           35
-#define PIN3           32
-#define PIN4           33
-#define LED_PIN_1      25
-#define LED_PIN_2      26
-#define LED_PIN_3      14
-#define LED_PIN_4      4
-#define BUTTON         19
-//#define RGB_G
-//#define RGB_B
-//#define RGB_R
+#define BUILT_IN_LED   2              //Wifi indication LED
+
+#define PIN1           34             //Switch 1
+#define PIN2           35             //Switch 2
+#define PIN3           32             //Switch 3
+#define PIN4           33             //Switch 4
+
+#define LED_PIN_1      25             //Relay 1
+#define LED_PIN_2      26             //Relay 2
+#define LED_PIN_3      14             //Relay 3
+#define LED_PIN_4      4              //Relay 4
+
+#define BUTTON         19             //Wifi reconnect
+
+#define RGB_G          18             //Green LED
+#define RGB_B          5              //Blue LED
+#define RGB_R          17             //Red LED
 
 int flag1_previous_I = 0;
 int flag1_previous_II = 1;
@@ -242,6 +246,14 @@ void setup()
   digitalWrite(LED_PIN_3, HIGH);
   pinMode(LED_PIN_4, OUTPUT);
   digitalWrite(LED_PIN_4, HIGH);
+
+  pinMode(RGB_G, OUTPUT);
+  digitalWrite(RGB_G, LOW);
+  pinMode(RGB_R, OUTPUT);
+  digitalWrite(RGB_R, LOW);
+  pinMode(RGB_B, OUTPUT);
+  digitalWrite(RGB_B, LOW);
+
 
   //Setting up serial
   Serial.begin(115200);
