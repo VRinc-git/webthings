@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Thing.h>
 #include <WebThingAdapter.h>
+#include "RGB.h"
 
 
 #define BUILT_IN_LED   2              //Wifi indication LED
@@ -44,6 +45,10 @@ const char *password = "wpa2 psk";
 const String mDNSHostname = "RealTimeFeedback";
 
 
+/*
+   Object to handle RGB
+*/
+RGB Led(RGB_R, RGB_G, RGB_B);
 
 /*
    Handle connection between things and gateway
