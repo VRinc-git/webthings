@@ -1,36 +1,46 @@
 #include <Arduino.h>
 #include <Thing.h>
 #include <WebThingAdapter.h>
-#include "RGB.h"
+
 
 
 #define BUILT_IN_LED   2              //Wifi indication LED
 
-#define PIN1           34             //Switch 1
-#define PIN2           35             //Switch 2
-#define PIN3           32             //Switch 3
-#define PIN4           33             //Switch 4
+#define PIN1           39             //Switch 1
+#define PIN2           34             //Switch 2
+#define PIN3           35             //Switch 3
+#define PIN4           32             //Switch 4
 
-#define LED_PIN_1      25             //Relay 1
-#define LED_PIN_2      26             //Relay 2
-#define LED_PIN_3      14             //Relay 3
-#define LED_PIN_4      4              //Relay 4
+#define LED_PIN_1      33             //Relay 1
+#define LED_PIN_2      25             //Relay 2
+#define LED_PIN_3      26             //Relay 3
+#define LED_PIN_4      27             //Relay 4
 
 #define BUTTON         19             //Wifi reconnect
 
-#define RGB_G          18             //Green LED
-#define RGB_B          5              //Blue LED
+#define RGB_B          18             //Blue LED
+#define RGB_G          5              //Green LED
 #define RGB_R          17             //Red LED
 
-int flag1_previous_I = 0;
-int flag1_previous_II = 1;
-int flag2_previous_I = 0;
-int flag2_previous_II = 1;
-int flag3_previous_I = 0;
-int flag3_previous_II = 1;
-int flag4_previous_I = 0;
-int flag4_previous_II = 1;
+#define BUZZ           16             //Buzzer
 
+bool flag1_previous_I = 0;
+bool flag1_previous_II = 1;
+bool flag2_previous_I = 0;
+bool flag2_previous_II = 1;
+bool flag3_previous_I = 0;
+bool flag3_previous_II = 1;
+bool flag4_previous_I = 0;
+bool flag4_previous_II = 1;
+
+bool man_flag1_previous_I = 0;
+bool man_flag1_previous_II = 1;
+bool man_flag2_previous_I = 0;
+bool man_flag2_previous_II = 1;
+bool man_flag3_previous_I = 0;
+bool man_flag3_previous_II = 1;
+bool man_flag4_previous_I = 0;
+bool man_flag4_previous_II = 1;
 
 /*
    SSID and Password
@@ -45,10 +55,6 @@ const char *password = "wpa2 psk";
 const String mDNSHostname = "RealTimeFeedback";
 
 
-/*
-   Object to handle RGB
-*/
-RGB Led(RGB_R, RGB_G, RGB_B);
 
 /*
    Handle connection between things and gateway
@@ -83,9 +89,7 @@ const char *ledTypes_4[] = {"onoffswitch",
                            };
 /*
    Description of your Thing
-
    ThingDevice device(id, title, types)
-
       @id: unique identifier for Thing (part of URL: http://<IP>/things/<id>)
       @description: string that shows up in Gateway for your Thing
       @types: array of @types
@@ -98,9 +102,7 @@ ThingDevice led_4("led 4", "Lamp", ledTypes_4);
 
 /*
    Define one or more properties supported by your Thing
-
    ThingProperty property(id, description, type, atType)
-
       @id: unique identifier for property
       @description: user-readable description of property
       @type: NO_STATE, BOOLEAN, NUMBER, or STRING
@@ -252,14 +254,6 @@ void setup()
   pinMode(LED_PIN_4, OUTPUT);
   digitalWrite(LED_PIN_4, HIGH);
 
-  pinMode(RGB_G, OUTPUT);
-  digitalWrite(RGB_G, LOW);
-  pinMode(RGB_R, OUTPUT);
-  digitalWrite(RGB_R, LOW);
-  pinMode(RGB_B, OUTPUT);
-  digitalWrite(RGB_B, LOW);
-
-
   //Setting up serial
   Serial.begin(115200);
 
@@ -280,7 +274,9 @@ void setup()
 }
 
 
-
+/*
+   Adapter function
+*/
 void Adapter()
 {
   ThingPropertyValue tpVal1, tpVal2, tpVal3, tpVal4;
@@ -306,7 +302,7 @@ void Adapter()
       ledOn_1.setValue(tpVal1);
 
       bool On1_1 = ledOn_1.getValue().boolean;
-      digitalWrite(LED_PIN_1, On1_1 ? LOW : HIGH);
+      digitalWrite(LED_PIN_1, On1_1 ? HIGH : LOW);
 
       if (On1_1 != lastOn_1)
       {
@@ -331,7 +327,7 @@ void Adapter()
       ledOn_1.setValue(tpVal1);
 
       bool On1_1 = ledOn_1.getValue().boolean;
-      digitalWrite(LED_PIN_1, On1_1 ? LOW : HIGH);
+      digitalWrite(LED_PIN_1, On1_1 ? HIGH : LOW);
 
       if (On1_1 != lastOn_1)
       {
@@ -554,33 +550,6 @@ void Adapter()
 }
 
 
-void loop()
-{
-
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    Call_ManualControl();
-    if (digitalRead(BUTTON) == LOW)
-    {
-      Serial.println("restarting ESP");
-      ESP.restart();
-    }
-  }
-
-
-  Adapter();
-
-
-
-
-  // Update all the properties and events
-  adapter->update();
-
-  // Wait for some time
-  delay(2000);
-
-}
-
 
 
 /*
@@ -590,23 +559,134 @@ void loop()
 void Call_ManualControl()
 {
   Serial.println("Manual Control");
-  digitalWrite(LED_PIN_1, digitalRead(PIN1));
-  Serial.println("LED1");
-  Serial.println(digitalRead(PIN1));
-  delay(1);
 
-  digitalWrite(LED_PIN_2, digitalRead(PIN2));
-  Serial.println("LED2");
-  Serial.println(digitalRead(PIN2));
-  delay(1);
+  bool pin1 = digitalRead(PIN1);
+  bool pin2 = digitalRead(PIN2);
+  bool pin3 = digitalRead(PIN3);
+  bool pin4 = digitalRead(PIN4);
+  /*
+     Relay 1
+  */
+  if ( pin1 == LOW)
+  {
+    if ( man_flag1_previous_I == 0)
+    {
+      digitalWrite(LED_PIN_1, pin1 ? LOW : HIGH);
+      Serial.println("LED1");
+      Serial.println(digitalRead(PIN1));
+      man_flag1_previous_I = 1;
+      man_flag1_previous_II = 1;
+    }
+  }
+  if ( pin1 == HIGH)
+  {
+    if ( man_flag1_previous_II == 1)
+    {
+      digitalWrite(LED_PIN_1, pin1 ? LOW : HIGH);
+      Serial.println("LED1");
+      Serial.println(digitalRead(PIN1));
+      man_flag1_previous_I = 0;
+      man_flag1_previous_II = 0;
+    }
 
-  digitalWrite(LED_PIN_3, digitalRead(PIN3));
-  Serial.println("LED3");
-  Serial.println(digitalRead(PIN3));
-  delay(1);
+  }
+  /*
+    Relay 2
+  */
+  if ( pin2 == LOW)
+  {
+    if ( man_flag2_previous_I == 0)
+    {
+      digitalWrite(LED_PIN_2, pin2 ? LOW : HIGH);
+      Serial.println("LED2");
+      Serial.println(digitalRead(PIN2));
+      man_flag2_previous_I = 1;
+      man_flag2_previous_II = 1;
+    }
+  }
+  if ( pin2 == HIGH)
+  {
+    if ( man_flag2_previous_II == 1)
+    {
+      digitalWrite(LED_PIN_2, pin2 ? LOW : HIGH);
+      Serial.println("LED2");
+      Serial.println(digitalRead(PIN2));
+      man_flag2_previous_I = 0;
+      man_flag2_previous_II = 0;
+    }
 
-  digitalWrite(LED_PIN_4, digitalRead(PIN4));
-  Serial.println("LED3");
-  Serial.println(digitalRead(PIN4));
-  delay(1);
+  }
+  /*
+    Relay 3
+  */
+  if ( pin3 == LOW)
+  {
+    if ( man_flag3_previous_I == 0)
+    {
+      digitalWrite(LED_PIN_3, pin3 ? LOW : HIGH);
+      Serial.println("LED3");
+      Serial.println(digitalRead(PIN3));
+      man_flag3_previous_I = 1;
+      man_flag3_previous_II = 1;
+    }
+  }
+  if ( pin3 == HIGH)
+  {
+    if ( man_flag3_previous_II == 1)
+    {
+      digitalWrite(LED_PIN_3, pin3 ? LOW : HIGH);
+      Serial.println("LED3");
+      Serial.println(digitalRead(PIN3));
+      man_flag3_previous_I = 0;
+      man_flag3_previous_II = 0;
+    }
+
+  }
+  /*
+    Relay 4
+  */
+  if ( pin4 == LOW)
+  {
+    if ( man_flag4_previous_I == 0)
+    {
+      digitalWrite(LED_PIN_4, pin4 ? LOW : HIGH);
+      Serial.println("LED4");
+      Serial.println(digitalRead(PIN4));
+      man_flag4_previous_I = 1;
+      man_flag4_previous_II = 1;
+    }
+  }
+  if ( pin4 == HIGH)
+  {
+    if ( man_flag4_previous_II == 1)
+    {
+      digitalWrite(LED_PIN_4, pin4 ? LOW : HIGH);
+      Serial.println("LED4");
+      Serial.println(digitalRead(PIN4));
+      man_flag4_previous_I = 0;
+      man_flag4_previous_II = 0;
+    }
+
+  }
+  delay(200);
+}
+
+void loop()
+{
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    if (digitalRead(BUTTON) == LOW)
+    {
+      Serial.println("restarting ESP");
+      ESP.restart();
+    }
+  }
+  Adapter();
+
+  // Update all the properties and events
+  adapter->update();
+
+  // Wait for some time
+  delay(2000);
+
 }
